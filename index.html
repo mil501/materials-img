@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>建材管理資料庫查詢系統</title>
+<style>
+:root{--bg:#f4f3ef;--surface:#fff;--text:#1d1d1b;--muted:#6b6a64;--line:#e2e0d8;--accent:#b4501e;--accent-soft:#f7e6dc;--chip:#eceae2;--shadow:0 1px 3px rgba(0,0,0,.08);box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#171716;--surface:#222220;--text:#eeede8;--muted:#a09f97;--line:#363633;--accent:#e58a57;--accent-soft:#3a2a20;--chip:#2e2e2b;--shadow:0 1px 3px rgba(0,0,0,.5);color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#171716;--surface:#222220;--text:#eeede8;--muted:#a09f97;--line:#363633;--accent:#e58a57;--accent-soft:#3a2a20;--chip:#2e2e2b;--shadow:0 1px 3px rgba(0,0,0,.5);color-scheme:dark}
+*{box-sizing:border-box}
+html,body{margin:0;background:var(--bg);color:var(--text);font-family:"Noto Sans TC","PingFang TC","Microsoft JhengHei",system-ui,sans-serif;-webkit-text-size-adjust:100%}
+header{position:sticky;top:env(safe-area-inset-top,0px);z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 16px}
+.wrap{max-width:1200px;margin:0 auto}
+h1{font-size:18px;margin:0 0 10px;display:flex;justify-content:space-between;align-items:center;gap:8px}
+.status{font-size:12px;color:var(--muted);font-weight:400}
+.search{width:100%;padding:12px 14px;font-size:16px;border:1px solid var(--line);border-radius:10px;background:var(--surface);color:var(--text)}
+.search:focus{outline:2px solid var(--accent);outline-offset:0}
+.cats{display:flex;gap:8px;overflow-x:auto;padding:10px 0 2px;scrollbar-width:none}
+.cat{flex:none;padding:7px 14px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:14px;cursor:pointer}
+.cat.on{background:var(--accent);border-color:var(--accent);color:#fff}
+.banner{margin:12px 0 0;padding:10px 12px;border-radius:8px;background:var(--accent-soft);font-size:13px;line-height:1.5}
+main{padding:16px 16px 110px}
+.count{font-size:13px;color:var(--muted);margin-bottom:12px}
+.grid{display:grid;gap:14px;grid-template-columns:repeat(auto-fill,minmax(230px,1fr))}
+@media (max-width:520px){.grid{grid-template-columns:1fr 1fr;gap:10px}}
+@media (max-width:360px){.grid{grid-template-columns:1fr}}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:12px;overflow:hidden;box-shadow:var(--shadow);display:flex;flex-direction:column}
+.card.sel{border-color:var(--accent);box-shadow:0 0 0 2px var(--accent)}
+.imgbox{aspect-ratio:4/3;overflow:hidden;background:#d9d8d2}
+.imgbox img{width:100%;height:100%;object-fit:cover;display:block;transition:transform .35s}
+.card:hover .imgbox img{transform:scale(1.08)}
+.body{padding:10px 12px 12px;display:flex;flex-direction:column;gap:5px;flex:1}
+.cat-t{font-size:11px;color:var(--accent);font-weight:600;letter-spacing:.04em}
+.model{font-size:12px;color:var(--muted)}
+.name{font-size:15px;font-weight:600;line-height:1.35}
+.meta{font-size:12px;color:var(--muted);line-height:1.5}
+.price{font-size:20px;font-weight:700;color:var(--accent);margin-top:auto;padding-top:4px}
+.price small{font-size:12px;font-weight:400;color:var(--muted)}
+.chips{display:flex;flex-wrap:wrap;gap:4px}
+.chip{font-size:11px;padding:2px 8px;border-radius:999px;background:var(--chip)}
+.cmp{display:flex;align-items:center;gap:8px;padding:10px 12px;border-top:1px solid var(--line);font-size:14px;cursor:pointer;user-select:none}
+.cmp input{width:20px;height:20px;accent-color:var(--accent)}
+.bar{position:fixed;left:0;right:0;bottom:0;z-index:10;background:var(--surface);border-top:1px solid var(--line);padding:12px 16px calc(12px + env(safe-area-inset-bottom,0px));display:flex;gap:10px;align-items:center;justify-content:center;transform:translateY(110%);transition:transform .3s}
+.bar.show{transform:none}
+.btn{padding:10px 18px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--text);font-size:15px;cursor:pointer}
+.btn.p{background:var(--accent);border-color:var(--accent);color:#fff}
+.mask{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center}
+.modal{background:var(--surface);width:100%;max-width:1100px;max-height:90%;border-radius:16px 16px 0 0;display:flex;flex-direction:column}
+@media (min-width:700px){.mask{align-items:center}.modal{border-radius:16px;max-height:85%}}
+.mh{display:flex;justify-content:space-between;align-items:center;padding:14px 16px;border-bottom:1px solid var(--line);font-weight:600}
+.scroll{overflow:auto;padding:0 0 8px;max-width:100%}
+table{border-collapse:collapse;min-width:100%;font-size:14px}
+th,td{padding:10px 12px;border-bottom:1px solid var(--line);text-align:left;vertical-align:top;min-width:150px}
+th:first-child,td:first-child{position:sticky;left:0;background:var(--surface);min-width:80px;color:var(--muted);font-weight:500;z-index:1}
+td img{width:120px;height:90px;object-fit:cover;border-radius:6px;display:block}
+.empty{text-align:center;color:var(--muted);padding:60px 0}
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react/18.3.1/umd/react.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/react-dom/18.3.1/umd/react-dom.production.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/babel-standalone/7.24.7/babel.min.js"></script>
+
+<script type="text/babel">
+const { useState, useEffect, useMemo } = React;
+
+const API_URL = "https://script.google.com/macros/s/AKfycbyuaUireEM6dWmuVlwc9SuM23p0oCVWB9JoVBDglc-I4stl-MOQlIAsWP62F8e_GurK/exec";
+const IMAGE_BASE_URL = "https://mil501.github.io/materials-img/";
+const CACHE_KEY = "materials_cache_v1";
+
+const PLACEHOLDER = "data:image/svg+xml;utf8," + encodeURIComponent(
+  '<svg xmlns="http://www.w3.org/2000/svg" width="400" height="300"><rect width="400" height="300" fill="#d9d8d2"/><g fill="none" stroke="#9a9990" stroke-width="6"><rect x="150" y="100" width="100" height="100" rx="8"/><path d="M160 190l30-35 25 25 15-15 20 25"/></g></svg>'
+);
+
+const DEMO = [
+  { 型號: "TL-6001", 建材名稱: "石英磚", 品牌: "示範品牌A", 項目分類: "地坪", 尺寸: "600x600", 單位: "m²", 報價: 1280, 特性標籤: "防滑,耐磨" },
+  { 型號: "WP-210", 建材名稱: "防水塗料", 品牌: "示範品牌B", 項目分類: "防水", 尺寸: "18L", 單位: "桶", 報價: 3650, 特性標籤: "彈性,耐候" },
+  { 型號: "GL-1200", 建材名稱: "複層玻璃", 品牌: "示範品牌C", 項目分類: "門窗", 尺寸: "6+12A+6", 單位: "m²", 報價: 2400, 特性標籤: "隔音,節能" }
+];
+
+// 資料清洗：剔除型號或建材名稱無效的列
+function clean(raw) {
+  if (!Array.isArray(raw)) return [];
+  const ok = v => v !== undefined && v !== null && String(v).trim() !== "";
+  return raw.filter(r => r && ok(r.型號) && ok(r.建材名稱));
+}
+
+function tagsOf(item) {
+  const t = item.特性標籤;
+  if (Array.isArray(t)) return t.map(s => String(s).trim()).filter(Boolean);
+  return String(t ?? "").split(/[,，、;；\s]+/).map(s => s.trim()).filter(Boolean);
+}
+const catOf = it => String(it.項目分類 ?? it.分類 ?? "").trim() || "未分類";
+const priceOf = it => it.報價 ?? it.單價 ?? "";
+const keyOf = it => `${String(it.型號).trim()}|${String(it.品牌 ?? "").trim()}`;
+
+function imgSrc(item) {
+  const fileName = encodeURIComponent(`${String(item.型號).trim()}_${String(item.品牌 ?? "").trim()}.jpg`);
+  return `${IMAGE_BASE_URL}${fileName}`;
+}
+function fmtPrice(v) {
+  const n = Number(String(v).replace(/[^\d.]/g, ""));
+  if (v === "" || v === undefined || v === null) return "洽詢";
+  return isNaN(n) || n === 0 && !/0/.test(String(v)) ? String(v) : "NT$ " + n.toLocaleString("zh-TW");
+}
+function readCache() {
+  try { const s = localStorage.getItem(CACHE_KEY); return s ? clean(JSON.parse(s)) : []; } catch (e) { return []; }
+}
+function writeCache(data) {
+  try { localStorage.setItem(CACHE_KEY, JSON.stringify(data)); } catch (e) {}
+}
+
+function Img({ item, style }) {
+  return <img src={imgSrc(item)} alt={String(item.建材名稱)} loading="lazy" style={style}
+    onError={e => { e.currentTarget.onerror = null; e.currentTarget.src = PLACEHOLDER; }} />;
+}
+
+function Card({ item, selected, onToggle }) {
+  const tags = tagsOf(item);
+  return (
+    <div className={"card" + (selected ? " sel" : "")}>
+      <div className="imgbox"><Img item={item} /></div>
+      <div className="body">
+        <div className="cat-t">{catOf(item)}</div>
+        <div className="model">{String(item.型號)}</div>
+        <div className="name">{String(item.建材名稱)}</div>
+        <div className="meta">{item.品牌 ? "品牌：" + item.品牌 : ""}{item.尺寸 ? <><br />尺寸：{String(item.尺寸)}</> : null}</div>
+        <div className="chips">{tags.map(t => <span className="chip" key={t}>{t}</span>)}</div>
+        <div className="price">{fmtPrice(priceOf(item))}{item.單位 ? <small> / {item.單位}</small> : null}</div>
+      </div>
+      <label className="cmp"><input type="checkbox" checked={selected} onChange={onToggle} />加入比較</label>
+    </div>
+  );
+}
+
+function CompareModal({ items, onClose, onRemove }) {
+  const rows = [
+    ["照片", it => <Img item={it} />],
+    ["分類", catOf],
+    ["型號", it => String(it.型號)],
+    ["名稱", it => String(it.建材名稱)],
+    ["品牌", it => it.品牌 || "—"],
+    ["尺寸", it => it.尺寸 || "—"],
+    ["單位", it => it.單位 || "—"],
+    ["單價", it => <b style={{ color: "var(--accent)", fontSize: 17 }}>{fmtPrice(priceOf(it))}</b>],
+    ["特性標籤", it => <div className="chips">{tagsOf(it).map(t => <span className="chip" key={t}>{t}</span>)}</div>],
+    ["", it => <button className="btn" onClick={() => onRemove(it)}>移除</button>]
+  ];
+  return (
+    <div className="mask" onClick={onClose}>
+      <div className="modal" onClick={e => e.stopPropagation()}>
+        <div className="mh"><span>建材比較（{items.length} 項）</span><button className="btn" onClick={onClose}>關閉</button></div>
+        <div className="scroll">
+          <table><tbody>
+            {rows.map(([label, fn], i) => (
+              <tr key={i}><td>{label}</td>{items.map(it => <td key={keyOf(it)}>{fn(it)}</td>)}</tr>
+            ))}
+          </tbody></table>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function App() {
+  const [data, setData] = useState(() => readCache());
+  const [state, setState] = useState("loading"); // loading | live | cached | demo
+  const [q, setQ] = useState("");
+  const [cat, setCat] = useState("全部");
+  const [picked, setPicked] = useState([]);
+  const [open, setOpen] = useState(false);
+
+  useEffect(() => {
+    let dead = false;
+    if (data.length) setState("cached");
+    fetch(API_URL, { redirect: "follow" })
+      .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(json => {
+        const arr = clean(Array.isArray(json) ? json : (json && (json.data || json.items)) || []);
+        if (dead) return;
+        setData(arr); setState("live"); writeCache(arr);
+      })
+      .catch(() => {
+        if (dead) return;
+        setData(prev => { if (prev.length) { setState("cached"); return prev; } setState("demo"); return DEMO; });
+      });
+    return () => { dead = true; };
+  }, []);
+
+  const cats = useMemo(() => ["全部", ...Array.from(new Set(data.map(catOf)))], [data]);
+
+  const list = useMemo(() => {
+    const kws = q.toLowerCase().split(/\s+/).filter(Boolean);
+    return data.filter(it => {
+      if (cat !== "全部" && catOf(it) !== cat) return false;
+      const hay = [it.型號, it.建材名稱, it.品牌, ...tagsOf(it)].join(" ").toLowerCase();
+      return kws.every(k => hay.includes(k));
+    });
+  }, [data, q, cat]);
+
+  const toggle = it => setPicked(p => p.includes(keyOf(it)) ? p.filter(k => k !== keyOf(it)) : [...p, keyOf(it)]);
+  const pickedItems = data.filter(it => picked.includes(keyOf(it)));
+  useEffect(() => { if (open && pickedItems.length === 0) setOpen(false); }, [pickedItems.length, open]);
+
+  const label = { loading: "載入中…", live: "已同步最新資料", cached: "顯示快取，背景同步中", demo: "示範資料" }[state];
+
+  return (
+    <>
+      <header><div className="wrap">
+        <h1>建材資料庫<span className="status">{label}</span></h1>
+        <input className="search" type="search" placeholder="搜尋型號、名稱、品牌、特性（可用空白分隔多個關鍵字）" value={q} onChange={e => setQ(e.target.value)} />
+        <div className="cats">{cats.map(c => <button key={c} className={"cat" + (cat === c ? " on" : "")} onClick={() => setCat(c)}>{c}</button>)}</div>
+        {state === "demo" && <div className="banner">目前無法連線至 GAS API，畫面為示範資料。此頁面若放在 GitHub Pages 等自有網域，即會讀取即時資料。</div>}
+      </div></header>
+      <main><div className="wrap">
+        <div className="count">共 {list.length} 項建材</div>
+        {list.length === 0 ? <div className="empty">沒有符合條件的建材</div> :
+          <div className="grid">{list.map(it => <Card key={keyOf(it)} item={it} selected={picked.includes(keyOf(it))} onToggle={() => toggle(it)} />)}</div>}
+      </div></main>
+      <div className={"bar" + (picked.length ? " show" : "")}>
+        <span>已選 {picked.length} 項</span>
+        <button className="btn" onClick={() => setPicked([])}>清除</button>
+        <button className="btn p" disabled={picked.length < 2} style={picked.length < 2 ? { opacity: .5 } : null} onClick={() => setOpen(true)}>開始比較</button>
+      </div>
+      {open && <CompareModal items={pickedItems} onClose={() => setOpen(false)} onRemove={toggle} />}
+    </>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById("root")).render(<App />);
+</script>
+</body>
+</html>
